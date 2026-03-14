@@ -2,6 +2,13 @@
 
 一个带有图形界面的mp3 flac元数据补全工具
 
+## 备注
+该项目原本由 [maiicy](https://github.com/Mai-icy) 创建并维护，据原项目 [Issue 3](https://github.com/Mai-icy/MusicTagger/issues/3) 声明 pillow 与 pyqt5 冲突之后，此项目没有进一步的更新。fork 此项目，使用更新的 uv 进行包管理，并使用 pyqt6 重写 UI 页面，修缮了 cloudmusic 的爬取问题。
+
+原项目框架保持不变。 pyqt6 的改动由 claude code 完成。 cloudmusic api 修缮借用了 [pycloudmusic](https://github.com/FengLiuFeseliud/pycloudmusic) 提供的代码。
+
+以下为原 readme. 感谢 [maiicy](https://github.com/Mai-icy) 的贡献。
+
 ## 简介 Introduction
 
 这是基于Python3以及Pyqt5的图形界面工具，利用音乐软件api的数据，补全歌曲元数据的工具。
