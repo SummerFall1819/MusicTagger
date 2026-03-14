@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import (QDialog, QLineEdit, QCheckBox, QPushButton, QLabel,
+from PyQt6.QtWidgets import (QDialog, QLineEdit, QCheckBox, QPushButton, QLabel,
                              QVBoxLayout, QHBoxLayout, QGridLayout, QFileDialog, QSizePolicy)
-from PyQt5.QtCore import pyqtSignal, Qt
+from PyQt6.QtCore import pyqtSignal, Qt
 
 class BatchModifyDialog(QDialog):
     """

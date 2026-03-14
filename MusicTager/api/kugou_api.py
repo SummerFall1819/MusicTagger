@@ -76,13 +76,13 @@ class KugouApi:
         if pic_url:
             pic_response = requests.get(pic_url, timeout=4)
             pic_response.raise_for_status()
-            
+
             with Image.open(io.BytesIO(pic_response.content)) as img:
                 if img.mode != 'RGB':
                     img = img.convert('RGB')
-                
+
                 img.thumbnail((500, 500))
-                
+
                 pic_buffer = io.BytesIO()
                 img.save(pic_buffer, format='JPEG', quality=85)
                 pic_buffer.seek(0)
@@ -147,6 +147,6 @@ class KugouApi:
 
 if __name__ == '__main__':
     a = KugouApi()
-    print(a.get_song_info('f6463b5a6fd6b237ff81f53aea3cdc4e'))
+    # print(a.get_song_info('f6463b5a6fd6b237ff81f53aea3cdc4e'))
     # b = a.get_lrc({'songName': 'ねぇねぇねぇ。', 'id': '56752254', 'key': 'B234B3AD9B04997104CE5C24CAD1531B', 'score': 60, 'source': 'ugc', 'duration': '3:30'})
     # print(b.save_to_mrc('1.mrc'))

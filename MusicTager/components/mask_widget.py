@@ -1,20 +1,21 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
+# Origin author: Mai-icy. Modification credits to Claude code.
 
 import sys
 
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
+from PyQt6.QtGui import *
+from PyQt6.QtWidgets import *
+from PyQt6.QtCore import *
 
 
 class MaskWidget(QWidget):
     def __init__(self, parent=None):
         super(MaskWidget, self).__init__(parent=parent)
-        self.setWindowFlag(Qt.FramelessWindowHint, True)
-        self.setAttribute(Qt.WA_StyledBackground)
+        self.setWindowFlag(Qt.WindowType.FramelessWindowHint, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground)
         self.setStyleSheet('background:rgba(0,0,0,102);')
-        self.setAttribute(Qt.WA_DeleteOnClose)
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
 
     def show(self):
         """重写show，设置遮罩大小与parent一致"""

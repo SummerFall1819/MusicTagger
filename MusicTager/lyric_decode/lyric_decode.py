@@ -1,16 +1,20 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
-import codecs
-import os.path
-import zlib
-import json
-import base64
+# Origin author: Mai-icy.
 import re
+import json
+import zlib
+import base64
+import codecs
+from typing import Optional
 
+# Lyric part is skipped.
 
 class LrcFile:
 
-    def __init__(self, file_path=None, lrc_type='non'):
+    def __init__(self,
+                file_path:Optional[str] = None,
+                lrc_type='non'):
         self.trans_non_dict = {}
         self.trans_romaji_dict = {}
         self.trans_chinese_dict = {}

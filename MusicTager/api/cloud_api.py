@@ -1,12 +1,17 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
+# Origin author: Mai-icy.
+
 import re
 import io
+import time
+import asyncio
+from typing import List
 
 import requests
-import time
-from typing import List
 from PIL import Image
+from pycloudmusic import Music163Api
+
 from lyric_decode.lyric_decode import LrcFile
 from song_metadata.metadata_type import SongInfo, SongSearchInfo
 from api.api_error import NoneResultError
@@ -17,6 +22,8 @@ class CloudMusicWebApi:
         self._search_url = 'https://music.163.com/api/search/get/web?&s={}&type=1&offset={}&total=true&limit=20'
         self._song_info_url = 'http://music.163.com/api/song/detail/?id={}&ids=[{}]'
         self._download_lrc_url = 'http://music.163.com/api/song/lyric?id={}&lv=-1&kv=-1&tv=-1&rv=-1'  # get 需要歌曲id
+
+        self.api = Music163Api()
 
     def get_song_info(self, song_id: str) -> SongInfo:
         """
@@ -37,14 +44,14 @@ class CloudMusicWebApi:
         print(pic_url)
         pic_response = requests.get(pic_url, timeout=4)
         pic_response.raise_for_status()
-        
+
         # 使用Pillow处理图片
         with Image.open(io.BytesIO(pic_response.content)) as img:
             if img.mode != 'RGB':
                 img = img.convert('RGB')
             # 调整图片大小
             img.thumbnail((500, 500))  # 限制最大尺寸
-            
+
             # 保存到内存
             pic_buffer = io.BytesIO()
             img.save(pic_buffer, format='JPEG', quality=85)
@@ -69,7 +76,41 @@ class CloudMusicWebApi:
         song_info = SongInfo(**song_info)
         return song_info
 
-    def search_data(self, keyword: str, page: int = 0) -> List[SongSearchInfo]:
+    async def _search_data(self, keyword: str, page: int = 0) -> List[SongSearchInfo]:
+
+        count, music_iter = await self.api.search_music(
+            key   = keyword,
+            page  = page,
+            limit = 20)
+
+        if count == 0:
+            raise NoneResultError
+
+        res_list = []
+
+        while True:
+            try:
+                item = next(music_iter)
+
+                song_data = {
+                    "idOrMd5": str(item.id),
+                    "songName": "".join(item.name),
+                    "singer": item.artist[0]["name"],
+                    "duration": '%d:%d%d' % (item.duration // 60, item.duration % 60 // 10, item.duration % 10),
+                }
+                res_list.append(SongSearchInfo(**song_data))
+
+            except StopIteration:
+                break  # 正常迭代结束
+            except Exception as e:
+                continue
+
+        return res_list
+
+
+
+
+    def search_data_old(self, keyword: str, page: int = 0) -> List[SongSearchInfo]:
         """
         Get rough information about search term results songs.
 
@@ -79,6 +120,7 @@ class CloudMusicWebApi:
         """
         keyword = re.sub(r"|[!@#$%^&*/]+", "", keyword)
         res_json = requests.post(self._search_url.format(keyword, page * 20), timeout=4).json()
+        # print(res_json)
         res_list = []
         if res_json["result"] == {} or res_json['code'] == 400 or res_json["result"]['songCount'] == 0:  # 该关键词没有结果数据
             raise NoneResultError
@@ -93,8 +135,19 @@ class CloudMusicWebApi:
                 "singer": ','.join(artists_list),
                 "duration": '%d:%d%d' % (duration // 60, duration % 60 // 10, duration % 10),
             }
+            print(song_data)
             res_list.append(SongSearchInfo(**song_data))
         return res_list
+
+    def search_data(self, keyword: str, page: int = 0) -> List[SongSearchInfo]:
+        """
+        Get rough information about search term results songs.
+
+        :param page: page of search api
+        """
+
+        result = asyncio.run(self._search_data(keyword, page))
+        return result
 
     def get_lrc(self, song_id: str) -> LrcFile:
         """
@@ -112,8 +165,9 @@ class CloudMusicWebApi:
 
 if __name__ == '__main__':
     # todo 各种错误的排查
-    a = CloudMusicWebApi()
-    print(a.search_data('mili'))
+    pass
+    # a = CloudMusicWebApi()
+    # print(a.search_data('mili'))
     # print(a.search_data('CheerS-Claris', 0))
     # b = a.get_song_info("1900488879")
     # print(b)

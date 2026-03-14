@@ -2,9 +2,9 @@
 import sys
 
 from PIL import Image, ImageQt
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
+from PyQt6.QtCore import *
+from PyQt6.QtWidgets import *
+from PyQt6.QtGui import *
 
 from ui.ui_source.ModifyDialog import Ui_ModifyDialog
 from song_metadata.metadata_type import SongInfo
@@ -28,8 +28,8 @@ class ModifyDialog(QDialog, Ui_ModifyDialog):
     def _init_setting(self):
         self.pic_label.setText("还没有图片哦")
         self.pic_label.setScaledContents(True)
-        self.year_lineEdit.setValidator(QRegExpValidator(QRegExp("[0-9]{,4}")))
-        self.track_number_lineEdit.setValidator(QRegExpValidator(QRegExp("[0-9]{,3}")))
+        self.year_lineEdit.setValidator(QRegularExpressionValidator(QRegularExpression("[0-9]{,4}")))
+        self.track_number_lineEdit.setValidator(QRegularExpressionValidator(QRegularExpression("[0-9]{,3}")))
 
     def upload_pic_event(self) -> None:
         """上传图片并显示"""
@@ -103,9 +103,7 @@ class ModifyDialog(QDialog, Ui_ModifyDialog):
 
 
 if __name__ == "__main__":
-    # 适配2k等高分辨率屏幕,低分辨率屏幕可以缺省
-    QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     app = QApplication(sys.argv)
     myWin = ModifyDialog()
     myWin.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

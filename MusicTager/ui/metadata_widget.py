@@ -1,17 +1,18 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
+# Origin author: Mai-icy. Modification credits to Claude code.
 import re
 import os
 import sys
 import time
 import json
 import threading
+from traceback import print_exc
 
 from PIL import Image
-from PyQt5.Qt import *
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+from PyQt6.QtCore import *
+from PyQt6.QtGui import *
+from PyQt6.QtWidgets import *
 
 import api
 from song_metadata.compare_metadata import compare_song_info
@@ -40,9 +41,9 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
 
         self._init_dialogs()
         self._init_apis()
-        
+
         self.progress_dialog = QProgressDialog("正在批量处理...", "取消", 0, 100, self)
-        self.progress_dialog.setWindowModality(Qt.WindowModal)
+        self.progress_dialog.setWindowModality(Qt.WindowModality.WindowModal)
         self.progress_dialog.setAutoClose(True)
         self.progress_dialog.reset()
 
@@ -152,21 +153,21 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
         self.search_tableWidget.verticalHeader().setVisible(False)
         self.search_tableWidget.setShowGrid(False)
 
-        self.search_tableWidget.horizontalHeader().setDefaultAlignment(Qt.AlignLeft)
+        self.search_tableWidget.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignLeft)
 
-        self.search_tableWidget.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
+        self.search_tableWidget.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
         self.search_tableWidget.verticalHeader().setDefaultSectionSize(47)
         self.search_tableWidget.horizontalHeader().setMinimumHeight(30)  # 表头高度
 
-        self.search_tableWidget.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.search_tableWidget.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.search_tableWidget.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.search_tableWidget.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
 
         self.search_tableWidget.clear()
         self.search_tableWidget.setColumnCount(4)
 
-        self.search_tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.search_tableWidget.horizontalHeader().setSectionResizeMode(2, QHeaderView.Fixed)
-        self.search_tableWidget.horizontalHeader().setSectionResizeMode(3, QHeaderView.Fixed)
+        self.search_tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.search_tableWidget.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
+        self.search_tableWidget.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
         # self.setColumnWidth(0, 380)  # 设置指定列宽
         self.search_tableWidget.setColumnWidth(2, 55)
         self.search_tableWidget.setColumnWidth(3, 55)
@@ -186,8 +187,8 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
         file_name_list = QFileDialog.getOpenFileNames(self, u"打开文件", "", "Music files(*.mp3 *.flac)")[0]
         for file_path in file_name_list:
             item = QListWidgetItem(file_path)
-            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            item.setCheckState(Qt.Unchecked)
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            item.setCheckState(Qt.CheckState.Unchecked)
             self.file_listWidget.addItem(item)
 
     def delete_file_event(self) -> None:
@@ -226,7 +227,7 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
         # 更新元数据和UI
         self.show_metadata(data["original_song_info"], data["file_path"], data["original_song_info"].picBuffer)
         self.set_left_text(self.original_md5_label, data["original_else_info"].md5)
-        
+
         keyword = self.generate_search_keyword(data["file_path"], data["original_song_info"])
         self.search_lineEdit.setText(keyword)
 
@@ -235,7 +236,7 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
 
         self.song_info = data.get("selected_song_info")
         self._load_song_info()
-        
+
         # 重新启用UI
         self.file_listWidget.setEnabled(True)
         self.search_tableWidget.setEnabled(True)
@@ -262,7 +263,7 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
                 search_results = search_func(keyword)
             except api.NoneResultError:
                 search_results = []
-            
+
             # 获取最佳匹配的详细信息
             selected_song_info = None
             if search_results:
@@ -280,6 +281,8 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
             return data
         except Exception as e:
             self.warning_dialog_show_signal.emit(f"处理文件时出错 '{os.path.basename(file_path)}':\n{e}")
+            print_exc()
+
             return None
 
     def show_warning_event(self, msg):
@@ -528,16 +531,16 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
         """选中搜索结果中的项目，显示详细信息，并更新缓存"""
         if not current_item or not self.file_listWidget.currentItem():
             return
-        
+
         current_file_path = self.file_listWidget.currentItem().text()
         self.search_tableWidget.setEnabled(False)
         self.result_pic_label.clear()
         self.result_pic_label.setText("获取数据中")
-        
+
         try:
             row = current_item.row()
             song_id_or_md5 = self.search_tableWidget.item(row, 3).text()
-            
+
             if self.api_mode == ApiMode.CLOUD:
                 self.song_info = self.cloud_api.get_song_info(song_id_or_md5)
             elif self.api_mode == ApiMode.KUGOU:
@@ -546,11 +549,11 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
                 self.song_info = self.spotify_api.get_song_info(song_id_or_md5)
             else:
                 raise ValueError("api_mode参数错误，未知的模式")
-            
+
             # 成功获取后，更新缓存
             if current_file_path in self.metadata_cache:
                 self.metadata_cache[current_file_path]["selected_song_info"] = self.song_info
-                
+
         except Exception as e:
             self.warning_dialog_show_signal.emit(repr(e))
             self.song_info = None # Clear song info on error
@@ -559,7 +562,7 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
 
     def set_left_text(self, label: QLabel, text: str) -> None:
         """根据文本内容设置标签样式和文本，并处理长文本的显示。"""
-        label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         # 检查文本是否有效
         if text and text.strip():
             # 清除样式，恢复默认
@@ -571,7 +574,7 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
 
         # 处理长文本的省略显示
         metrics = QFontMetrics(label.font())
-        elided_text = metrics.elidedText(display_text, Qt.ElideRight, label.width())
+        elided_text = metrics.elidedText(display_text, Qt.TextElideMode.ElideRight, label.width())
         label.setText(elided_text)
 
     def dragEnterEvent(self, a0: QDragEnterEvent) -> None:
@@ -593,8 +596,8 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
     def dropEvent(self, a0: QDropEvent) -> None:
         for q_url in a0.mimeData().urls():
             item = QListWidgetItem(q_url.toLocalFile())
-            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            item.setCheckState(Qt.Unchecked)
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            item.setCheckState(Qt.CheckState.Unchecked)
             self.file_listWidget.addItem(item)
 
     def show_metadata(self, song_info: SongInfo, file_path: str = None, pic_buffer=None):
@@ -649,13 +652,13 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
         checked_items = []
         for i in range(self.file_listWidget.count()):
             item = self.file_listWidget.item(i)
-            if item.checkState() == Qt.Checked:
+            if item.checkState() == Qt.CheckState.Checked:
                 checked_items.append(item)
 
         if not checked_items:
             QMessageBox.warning(self, "提示", "请先勾选需要处理的文件。")
             return
-        
+
         self.progress_dialog.setMaximum(len(checked_items))
         self.progress_dialog.setValue(0)
         self.progress_dialog.show()
@@ -716,7 +719,7 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
                     # 4. 写入文件
                     row = self.file_listWidget.row(item)
                     self._write_metadata_to_file(row, new_song_info, best_match.idOrMd5)
-                
+
                 except Exception as e:
                     # 使用信号在主线程显示错误，避免线程安全问题
                     self.warning_dialog_show_signal.emit(f"处理文件失败：{os.path.basename(file_path)}\n错误：{e}")
@@ -729,7 +732,7 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
         """根据勾选的文件数量，设置批量修改按钮的可用状态"""
         checked_count = 0
         for i in range(self.file_listWidget.count()):
-            if self.file_listWidget.item(i).checkState() == Qt.Checked:
+            if self.file_listWidget.item(i).checkState() == Qt.CheckState.Checked:
                 checked_count += 1
         self.batch_modify_button.setEnabled(checked_count > 1)
 
@@ -738,7 +741,7 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
 
     def toggle_select_all(self, state):
         """(取消)全选 all items in the file list."""
-        check_state = Qt.Checked if state == Qt.Checked else Qt.Unchecked
+        check_state = Qt.CheckState.Checked if state == Qt.CheckState.Checked else Qt.CheckState.Unchecked
         self.file_listWidget.itemChanged.disconnect(self.on_item_changed)
         for i in range(self.file_listWidget.count()):
             self.file_listWidget.item(i).setCheckState(check_state)
@@ -757,9 +760,7 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
 
 
 if __name__ == "__main__":
-    # 适配2k等高分辨率屏幕,低分辨率屏幕可以缺省
-    QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     app = QApplication(sys.argv)
     myWin = MetadataWidget()
     myWin.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

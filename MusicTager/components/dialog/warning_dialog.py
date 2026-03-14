@@ -1,8 +1,8 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
 
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
+from PyQt6.QtWidgets import *
+from PyQt6.QtCore import *
 
 from ui.ui_source.WarningDialog import Ui_WarningDialog
 from components.mask_widget import MaskWidget
@@ -38,11 +38,9 @@ class WarningDialog(QDialog, Ui_WarningDialog):
 
 if __name__ == "__main__":
     import sys
-    # 适配2k等高分辨率屏幕,低分辨率屏幕可以缺省
-    QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     app = QApplication(sys.argv)
     myWin = WarningDialog()
     myWin.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 

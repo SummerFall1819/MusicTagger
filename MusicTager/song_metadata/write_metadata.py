@@ -1,13 +1,22 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
+# Origin author: Mai-icy.
 import os
+from typing import Tuple, Optional
 
-import requests
 from mutagen import id3, mp4, flac
+
 from song_metadata.metadata_type import SongInfo
 
+COVER_WIDTH = 500
+COVER_HEIGHT = 500
+COVER_COLOR_DEPTH = 16
+COPYRIGHT_SYMBOL = u'\xa9' # unicode for @
 
-def write_song_metadata(song_path: str, song_info: SongInfo, pic_path: str = None) -> tuple:
+
+def write_song_metadata(song_path: str,
+                        song_info: SongInfo,
+                        pic_path: Optional[str] = None) -> Optional[Tuple[str, str]]:
     """
     判断目标文件的格式，若格式错误则调整，并返回调整前后的格式
 
@@ -15,29 +24,34 @@ def write_song_metadata(song_path: str, song_info: SongInfo, pic_path: str = Non
     """
     suffix = os.path.splitext(song_path)[-1]
     try:
-        if suffix == ".flac":
-            write_flac_metadata(song_path, song_info, pic_path)
-        elif suffix == ".mp3":
-            write_mp3_metadata(song_path, song_info, pic_path)
-        elif suffix == ".mp4" or suffix == ".m4a":
-            write_mp4_metadata(song_path, song_info, pic_path)
-        return ()
+        match suffix:
+            case ".flac":
+                write_flac_metadata(song_path, song_info, pic_path)
+            case ".mp3":
+                write_mp3_metadata(song_path, song_info, pic_path)
+            case ".mp4" | ".m4a":
+                write_mp4_metadata(song_path, song_info, pic_path)
+        return None
     except (id3.ID3NoHeaderError, mp4.MP4StreamInfoError, flac.FLACNoHeaderError):
-        for file_format, func, error in [(".mp4", write_mp4_metadata, mp4.MP4StreamInfoError),
-                                         (".mp3", write_mp3_metadata, id3.ID3NoHeaderError),
-                                         (".flac", write_flac_metadata, flac.FLACNoHeaderError)]:
+        # iterate all possible formats.
+        for file_format, func, error in [
+            (".mp4",  write_mp4_metadata,  mp4.MP4StreamInfoError),
+            (".mp3",  write_mp3_metadata,  id3.ID3NoHeaderError),
+            (".flac", write_flac_metadata, flac.FLACNoHeaderError)
+        ]:
             try:
                 _ = func(song_path)
             except error:
-                continue
-            # 可能抛出mutagen的未知错误
+                continue # 可能抛出mutagen的未知错误
             else:
                 return file_format, suffix
         else:
             raise TypeError("文件格式不正确")
 
 
-def write_flac_metadata(song_path: str, song_info: SongInfo, pic_path: str = None):
+def write_flac_metadata(song_path: str,
+                        song_info: SongInfo,
+                        pic_path: Optional[str] = None) -> None:
     """为flac文件写入元数据标签 pic_path为封面图片，格式要求为png或者jpg"""
     audio = flac.FLAC(song_path)
     if song_info.songName:
@@ -55,11 +69,12 @@ def write_flac_metadata(song_path: str, song_info: SongInfo, pic_path: str = Non
         audio["GENRE"] = song_info.genre
     if song_info.lyric:
         audio["LYRICS"] = song_info.lyric
+
     pic = flac.Picture()
-    pic.type = id3.PictureType.COVER_FRONT
-    pic.width = 500
-    pic.height = 500
-    pic.depth = 16  # color depth
+    pic.type   = id3.PictureType.COVER_FRONT
+    pic.width  = COVER_WIDTH
+    pic.height = COVER_HEIGHT
+    pic.depth  = COVER_COLOR_DEPTH
     if pic_path:
         pic.mime = u"image/png" if pic_path.endswith("png") else u"image/jpeg"
         pic.data = open(pic_path, 'rb').read()
@@ -73,8 +88,9 @@ def write_flac_metadata(song_path: str, song_info: SongInfo, pic_path: str = Non
             audio.add_picture(pic)
     audio.save()
 
-
-def write_mp3_metadata(song_path: str, song_info: SongInfo, pic_path: str = None):
+def write_mp3_metadata(song_path: str,
+                    song_info: SongInfo,
+                    pic_path: Optional[str] = None) -> None:
     """为mp3文件写入ID3标签 pic_path为封面图片，格式要求为png或者jpg"""
     audio = id3.ID3(song_path)
     if song_info.songName:
@@ -91,6 +107,7 @@ def write_mp3_metadata(song_path: str, song_info: SongInfo, pic_path: str = None
         audio["TCON"] = id3.TCON(text=song_info.genre)
     if song_info.lyric:
         audio.add(id3.USLT(encoding=3, lang='eng', desc='desc', text=song_info.lyric))
+
     if pic_path:
         mime = 'image/png' if pic_path.endswith("png") else 'image/jpeg'
         with open(pic_path, 'rb') as f:
@@ -98,27 +115,30 @@ def write_mp3_metadata(song_path: str, song_info: SongInfo, pic_path: str = None
     elif song_info.picBuffer:
         if song_info.picBuffer.getvalue():
             audio["APIC:"] = id3.APIC(encoding=3, mime='image/jpeg', type=3, data=song_info.picBuffer.getvalue())
+
     audio.update_to_v23()
     audio.save(v2_version=3)
-    return True
 
 
-def write_mp4_metadata(song_path: str, song_info: SongInfo, pic_path: str = None):
+def write_mp4_metadata(song_path: str,
+                    song_info: SongInfo,
+                    pic_path: str = Optional[None]) -> None:
     """为mp4，m4a等mp4容器写入元数据标签 pic_path为封面图片，格式要求为png或者jpg """
     audio = mp4.MP4(song_path)
     if song_info.songName:
-        audio["\xa9nam"] = song_info.songName
+        audio[f"{COPYRIGHT_SYMBOL}nam"] = song_info.songName
     if song_info.singer:
-        audio["\xa9ART"] = song_info.singer
+        audio[f"{COPYRIGHT_SYMBOL}ART"] = song_info.singer
         audio["aART"] = song_info.singer
     if song_info.year:
-        audio["\xa9day"] = song_info.year
+        audio[f"{COPYRIGHT_SYMBOL}day"] = song_info.year
     if song_info.genre:
-        audio["\xa9gen"] = song_info.genre
+        audio[f"{COPYRIGHT_SYMBOL}gen"] = song_info.genre
     if song_info.album:
-        audio["\xa9alb"] = song_info.album
+        audio[f"{COPYRIGHT_SYMBOL}alb"] = song_info.album
     if song_info.trackNumber:
         audio["trkn"] = [(1, 10)]
+
     if pic_path:
         img_format = mp4.MP4Cover.FORMAT_PNG if pic_path.endswith("png") else mp4.MP4Cover.FORMAT_JPEG
         with open(pic_path, 'rb') as f:
@@ -126,9 +146,5 @@ def write_mp4_metadata(song_path: str, song_info: SongInfo, pic_path: str = None
     elif song_info.picBuffer:
         if song_info.picBuffer.getvalue():
             audio["covr"] = [mp4.MP4Cover(song_info.picBuffer.getvalue(), imageformat=mp4.MP4Cover.FORMAT_JPEG)]
+
     audio.save()
-
-
-if __name__ == "__main__":
-    # FLAC(r'Z:\KuGou\2021.6.21\まふまふ - 空腹.mp3')
-    id3.ID3(r"Z:\.....机房共享文件\flac歌曲\ずっと真夜中でいいのに。\眩しいDNAだけ.flac")

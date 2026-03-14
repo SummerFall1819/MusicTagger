@@ -1,9 +1,9 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
 
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
+from PyQt6.QtCore import *
+from PyQt6.QtWidgets import *
+from PyQt6.QtGui import *
 
 from ui.ui_source.AutoMetadataDialog import Ui_AutoMetadataDialog
 from components.mask_widget import MaskWidget
