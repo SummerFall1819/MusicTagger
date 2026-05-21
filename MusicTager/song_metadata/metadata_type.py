@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
 # Origin author: Mai-icy.
+from typing import Optional
 import collections
 from dataclasses import dataclass
 
@@ -14,7 +15,7 @@ class SongInfo:
     duration: str
     genre: str
     picBuffer: bytes
-    lyric: str
+    lyric: Optional[str]
 
 @dataclass
 class SongElseInfo:

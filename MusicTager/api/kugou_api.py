@@ -97,7 +97,8 @@ class KugouApi:
             "trackNumber": None,  # 实在难搞w
             "duration": f'{duration // 60}:{duration % 60 // 10}{duration % 10}',
             "genre": None,
-            "picBuffer": pic_buffer}
+            "picBuffer": pic_buffer,
+            "lyric": None}
         return SongInfo(**song_info)
 
     def get_lrc_info(self, md5: str) -> List[Dict[str, str]]:

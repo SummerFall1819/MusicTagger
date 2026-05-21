@@ -79,7 +79,6 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
         """初始化API客户端"""
         self.cloud_api = api.CloudMusicWebApi()
         self.kugou_api = api.KugouApi()
-        self.spotify_api = api.SpotifyApi()
 
     def _init_setting(self):
         """初始化设置"""
@@ -97,7 +96,7 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
                 raise FileNotFoundError
             with open(config_path, "r", encoding="utf-8") as f:
                 config = json.load(f)
-            self.api_mode = ApiMode(config.get("api_mode", 0))
+            self.api_mode = self._normalize_api_mode(config.get("api_mode", ApiMode.CLOUD.value))
             self.is_rename = config.get("is_rename", False)
             self.is_lrc = config.get("is_lrc", False)
         except (FileNotFoundError, json.JSONDecodeError) as e:
@@ -120,6 +119,12 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
             self.is_lrc = default_config["is_lrc"]
         except IOError as e:
             print(f"无法创建默认配置文件: {e}")
+
+    def _normalize_api_mode(self, api_mode: int) -> ApiMode:
+        try:
+            return ApiMode(api_mode)
+        except ValueError:
+            return ApiMode.CLOUD
 
     def _init_signal(self):
         """初始化信号"""
@@ -253,8 +258,6 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
                 search_func, info_func = self.cloud_api.search_data, self.cloud_api.get_song_info
             elif self.api_mode == ApiMode.KUGOU:
                 search_func, info_func = self.kugou_api.search_hash, self.kugou_api.get_song_info
-            elif self.api_mode == ApiMode.SPOTIFY:
-                search_func, info_func = self.spotify_api.search_data, self.spotify_api.get_song_info
             else:
                 raise ValueError("未知的API模式")
 
@@ -394,9 +397,6 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
         elif self.api_mode == ApiMode.KUGOU:
             search_func = self.kugou_api.search_hash
             search_info_func = self.kugou_api.get_song_info
-        elif self.api_mode == ApiMode.SPOTIFY:
-            search_func = self.spotify_api.search_data
-            search_info_func = self.spotify_api.get_song_info
         else:
             raise ValueError("api_mode参数错误，未知的模式")
 
@@ -495,8 +495,6 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
         elif self.api_mode == ApiMode.KUGOU:
             lrc_info = self.kugou_api.get_lrc_info(md5_or_id)[0]
             lrc_file = self.kugou_api.get_lrc(lrc_info)
-        elif self.api_mode == ApiMode.SPOTIFY:
-            return
         else:
             raise ValueError("api_mode参数错误，未知的模式")
         if not os.path.exists(LRC_PATH):
@@ -515,8 +513,6 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
                     self.search_data = self.cloud_api.search_data(keyword)
                 elif self.api_mode == ApiMode.KUGOU:
                     self.search_data = self.kugou_api.search_hash(keyword)
-                elif self.api_mode == ApiMode.SPOTIFY:
-                    self.search_data = self.spotify_api.search_data(keyword)
                 else:
                     raise ValueError("api_mode参数错误，未知的模式")
             except api.NoneResultError:
@@ -545,8 +541,6 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
                 self.song_info = self.cloud_api.get_song_info(song_id_or_md5)
             elif self.api_mode == ApiMode.KUGOU:
                 self.song_info = self.kugou_api.get_song_info(song_id_or_md5)
-            elif self.api_mode == ApiMode.SPOTIFY:
-                self.song_info = self.spotify_api.get_song_info(song_id_or_md5)
             else:
                 raise ValueError("api_mode参数错误，未知的模式")
 
@@ -690,9 +684,6 @@ class MetadataWidget(QWidget, Ui_MetadataWidget):
             elif self.api_mode == ApiMode.KUGOU:
                 search_func = self.kugou_api.search_hash
                 info_func = self.kugou_api.get_song_info
-            elif self.api_mode == ApiMode.SPOTIFY:
-                search_func = self.spotify_api.search_data
-                info_func = self.spotify_api.get_song_info
             else:
                 raise ValueError("api_mode参数错误，未知的模式")
 
